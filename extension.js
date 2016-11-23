@@ -23,6 +23,7 @@ const birdieKeys = "abcdefghijklmnopqrstuvwxyz".split("");
 
 const altTab = imports.ui.altTab;
 const AppFavorites = imports.ui.appFavorites;
+const Clutter = imports.gi.Clutter;
 const Dash = imports.ui.dash;
 const Lang = imports.lang;
 const Main = imports.ui.main;
@@ -35,8 +36,9 @@ const Workspace = imports.ui.workspace;
 const WorkspacesView = imports.ui.workspacesView;
 
 // see _onOverviewCreated for some variables
-let birdieInjections, birdieActors, birdieSignals, birdieNextKeyIdx, birdieBindingsTable, birdieView;
+let birdieInjections, birdieActors, birdieSignals, birdieNextKeyIdx, birdieBindingsTable, birdieView, birdieListen;
 function resetBindingsState() {
+    birdieListen = true;
     birdieNextKeyIdx = 0;
     birdieBindingsTable = [];
 }
@@ -204,6 +206,14 @@ function enable() {
     });
     
     WorkspacesView.WorkspacesView.prototype._onKeyPress = function(s, o) {
+	if (!birdieListen)
+	    return false;
+
+	if (o.get_key_symbol() == Clutter.KEY_space) {
+	    birdieView._workspaces[global.screen.get_active_workspace_index()].hideWindowsTooltips();
+	    birdieListen = false;
+	    return true;
+	}
 
 	/*  so, "key_code - 97" does not seem to work
 	    so instead use key_unicode (meh!) */
