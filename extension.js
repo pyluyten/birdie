@@ -204,7 +204,6 @@ function enable() {
     });
     
     WorkspacesView.WorkspacesView.prototype._onKeyPress = function(s, o) {
-	global.log(o.get_key_unicode());
 
 	/*  so, "key_code - 97" does not seem to work
 	    so instead use key_unicode (meh!) */
