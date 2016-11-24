@@ -36,7 +36,8 @@ const Workspace = imports.ui.workspace;
 const WorkspacesView = imports.ui.workspacesView;
 
 // see _onOverviewCreated for some variables
-let birdieInjections, birdieActors, birdieSignals, birdieNextKeyIdx, birdieBindingsTable, birdieView, birdieListen;
+let birdieInjections, birdieActors, birdieSignals, birdieNextKeyIdx, birdieBindingsTable, birdieView, birdieApps, birdieListen;
+
 function resetBindingsState() {
     birdieListen = true;
     birdieNextKeyIdx = 0;
@@ -73,17 +74,37 @@ function injectToFunction(parent, name, func)
 */
 
 let birdieType = {
-  WINDOW: 1,
+    WINDOW: 1,
+    FAVOURITE: 2,
 };
 
 function _onOverviewCreated() {
+    var CurBinding;
     resetBindingsState();
+    
+    /* assign bindings to Dash */
+    var children = Main.overview._dash._box.get_children().filter(function(actor) {
+	return actor.child &&
+               actor.child._delegate &&
+               actor.child._delegate.app;
+    });
 
+    var birdieApps = children.map(function(actor) {
+        return actor.child._delegate.app;
+    });
+
+    birdieApps.forEach(function(a){
+	CurBinding=[birdieKeys[birdieNextKeyIdx],a, birdieType.FAVOURITE];
+	birdieBindingsTable.push(CurBinding);
+	birdieNextKeyIdx++;});
+
+    /* assign bindings to AltTab */
     global.display.get_tab_list(Meta.TabList.NORMAL,null).forEach(function(w){
-	let CurBinding=[birdieKeys[birdieNextKeyIdx],w, birdieType.WINDOW];
+	CurBinding=[birdieKeys[birdieNextKeyIdx],w, birdieType.WINDOW];
 	birdieBindingsTable.push(CurBinding);
 	birdieNextKeyIdx++});
-
+		       
+    /* show tooltips */
     birdieView._workspaces[global.screen.get_active_workspace_index()].showWindowsTooltips();
 
     // hide() searchEntry or search entry bin
@@ -120,13 +141,13 @@ function enable() {
         this._text.raise_top();
         this._text.show();
     }
-    birdieInjections['windowoverlay-showTooltip'] = undefined;
+    birdieInjections['windowoverlay-showtooltip'] = undefined;
 
     Workspace.WindowOverlay.prototype.hideTooltip = function() {
         if (this._text && this._text.visible)
             this._text.hide();
     }
-    birdieInjections['hideTooltip'] = undefined;
+    birdieInjections['windowoverlay-hidetooltip'] = undefined;
 
 
 /* Workspaces are not supported yet. */
@@ -217,15 +238,24 @@ function enable() {
 
 	/*  so, "key_code - 97" does not seem to work
 	    so instead use key_unicode (meh!) */
-	var win = birdieBindingsTable[o.get_key_unicode().charCodeAt(0)-97][1];
+	var idx = o.get_key_unicode().charCodeAt(0)-97;
+	var birdieObj = birdieBindingsTable[idx][1];
+	var curType = birdieBindingsTable[idx][2];
 
-	if (win) {
-	/*  immediately hide because fade out would be unpleasant */
+	if (birdieObj) {
+	    /*  immediately hide because fade out would be unpleasant */
 	    birdieView._workspaces[global.screen.get_active_workspace_index()].hideWindowsTooltips();
-	    Main.activateWindow(win, global.get_current_time());
+
+	    /*  then switch to window or launch app */
+	    if (curType == birdieType.WINDOW)
+		Main.activateWindow(birdieObj, global.get_current_time());
+
+	    if (curType == birdieType.FAVOURITE)
+		birdieObj.open_new_window(-1);
+	    
 	    return true;
 	}
-	
+
 	return false;
     }
 
@@ -250,8 +280,8 @@ function removeInjection(object, injection, name)
 function disable() {
     var i;
 
-    removeInjection(Overview, birdieInjections,  'windowoverlay-showTooltip');
-    removeInjection(Overview, birdieInjections,  'window-overlayhideTooltip');
+    removeInjection(Overview, birdieInjections,  'windowoverlay-showtooltip');
+    removeInjection(Overview, birdieInjections,  'windowoverlay-hidetooltip');
     removeInjection(Overview, birdieInjections,  'workspace-showwindowswooltips');
     removeInjection(Overview, birdieInjections,  'workspace-hidewindowstooltips' );
     removeInjection(Overview, birdieInjections,  'overview-show');
