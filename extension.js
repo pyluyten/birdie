@@ -114,7 +114,7 @@ function _onOverviewCreated() {
 }
 
 
-function _getBirdieKey (WindowOverlay) {
+function _getBirdieKey (item, type) {
     var giveup = false;
     var ii = 0;
 
@@ -124,13 +124,18 @@ function _getBirdieKey (WindowOverlay) {
 	}
 
         else {
-	    if (WindowOverlay.child && WindowOverlay.child._delegate) {
-		return "x";
-	    }
+            /* item is DashItemContainer */
+            if (type == birdieType.FAVOURITE)
+	        if (item.child && item.child._delegate) {
+                    if (item == birdieBindingsTable[ii][1])
+		        return birdieBindingsTable[ii][0];
+	        }
 
-	    if (WindowOverlay._windowClone && WindowOverlay._windowClone.metaWindow &&
-		WindowOverlay._windowClone.metaWindow == birdieBindingsTable[ii][1])
-		return birdieBindingsTable[ii][0];
+            /* item is WindowOverlay */
+            if (type == birdieType.WINDOW)
+	        if (item._windowClone && item._windowClone.metaWindow &&
+		    item._windowClone.metaWindow == birdieBindingsTable[ii][1])
+		    return birdieBindingsTable[ii][0];
 	}
 	ii++;
     }
@@ -142,7 +147,7 @@ function enable() {
     global.log ("BIRDIE : Enabled");
 
     Workspace.WindowOverlay.prototype.showTooltip = function() {
-	this._text.text = _getBirdieKey(this);
+	this._text.text = _getBirdieKey(this, birdieType.WINDOW);
         this._text.raise_top();
         this._text.show();
     }
@@ -155,30 +160,17 @@ function enable() {
     birdieInjections['windowoverlay-hidetooltip'] = undefined;
 
 
-    /*Dash.DashActor.prototype.showTooltip = function() {
-        global.log ("dash actor : showTooltip");
-	//this._text.text = _getBirdieKey(this);
-	this._text.text = "toto";
-        this._text.raise_top();
-        this._text.show();
-    }
-    birdieInjections['dashactor-showtooltip'] = undefined;*/
-
     Dash.DashItemContainer.prototype.showTooltip = function() {
-        global.log ("dash actor : showTooltip");
-	//this._text.text = _getBirdieKey(this);
-	this._text.text = "toto";
-        this._text.raise_top();
-        this._text.show();
+        this.setLabelText(_getBirdieKey(this, birdieType.FAVOURITE));
+        this.showLabel();
     }
-    birdieInjections['dashactor-showtooltip'] = undefined;
+    birdieInjections['dashitemcontainer-showtooltip'] = undefined;
 
     
-    Dash.DashActor.prototype.hideTooltip = function() {
-        if (this._text && this._text.visible)
-            this._text.hide();
+    Dash.DashItemContainer.prototype.hideTooltip = function() {
+        this.hideLabel();
     }
-    birdieInjections['dashactor-hidetooltip'] = undefined;
+    birdieInjections['dashitemcontainer-hidetooltip'] = undefined;
 
     Workspace.Workspace.prototype.showWindowsTooltips = function() {
         for (let i in this._windowOverlays) {
@@ -197,7 +189,6 @@ function enable() {
     birdieInjections['workspace-hidewindowstooltips'] = undefined;
 
     Dash.Dash.prototype.showTooltips = function() {
-        global.log ("dash : showTooltips()");
 
         var children = Main.overview._dash._box.get_children().filter(function(actor) {
 	return actor.child &&
@@ -331,8 +322,8 @@ function disable() {
     removeInjection(Overview, birdieInjections,  'windowoverlay-hidetooltip');
     removeInjection(Overview, birdieInjections,  'workspace-showwindowswooltips');
     removeInjection(Overview, birdieInjections,  'workspace-hidewindowstooltips' );
-    removeInjection(Overview, birdieInjections,  'dashactor-showtooltip');
-    removeInjection(Overview, birdieInjections,  'dashactor-hidetooltip');
+    removeInjection(Overview, birdieInjections,  'dashitemcontainer-showtooltip');
+    removeInjection(Overview, birdieInjections,  'dashitemcontainer-hidetooltip');
     removeInjection(Overview, birdieInjections,  'dash-showtooltips');
     removeInjection(Overview, birdieInjections,  'dash-hidetooltips');
     removeInjection(Overview, birdieInjections,  'overview-show');
