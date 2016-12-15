@@ -165,7 +165,6 @@ function enable() {
     /* Window Overlay injetions */
     Workspace.WindowOverlay.prototype.showTooltip = function() {
 	this._text.text = _getBirdieKey(this, birdieType.WINDOW);
-	global.log ("window " + this._text.text + " => show tooltip");
         this._text.raise_top();
         this._text.show();
     }
